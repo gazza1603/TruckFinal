@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle</title>
+</head>
+<body>
+    <h1>Vehicle</h1>
+
+    <!-- Toggles for Showing/Hiding Columns -->
+    <table>
+        <tr>
+            <th>Field</th>
+            <th>Show</th>
+        </tr>
+        <tr>
+            <td>Fleet Number</td>
+            <td><input type="checkbox" id="toggle-fleet_no" checked></td>
+        </tr>
+        <tr>
+            <td>Cost Centre</td>
+            <td><input type="checkbox" id="toggle-cost_centre" checked></td>
+        </tr>
+        <tr>
+            <td>Registration Number</td>
+            <td><input type="checkbox" id="toggle-reg_no" checked></td>
+        </tr>
+        <tr>
+            <td>Category</td>
+            <td><input type="checkbox" id="toggle-category" checked></td>
+        </tr>
+        <tr>
+            <td>Group</td>
+            <td><input type="checkbox" id="toggle-group" checked></td>
+        </tr>
+        <tr>
+            <td>Body Type</td>
+            <td><input type="checkbox" id="toggle-body_type" checked></td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td><input type="checkbox" id="toggle-status" checked></td>
+        </tr>
+        <tr>
+            <td>Area Available</td>
+            <td><input type="checkbox" id="toggle-area_available" checked></td>
+        </tr>
+    </table>
+
+    <!-- Search Form -->
+    <form method="get">
+        <select name="search_field">
+            <option value="all">All Fields</option>
+            <option value="fleet_no">Fleet Number</option>
+            <option value="cost_centre">Cost Centre</option>
+            <option value="reg_no">Registration Number</option>
+            <option value="category">Category</option>
+            <option value="group">Group</option>
+            <option value="body_type">Body Type</option>
+            <option value="status">Status</option>
+            <option value="area_available">Area Available</option>
+        </select>
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search...">
+        <input type="submit" value="Search">
+    </form>
+
+    <table border="1">
+        <tr>
+            <th id="fleet_no-header">Fleet Number</th>
+            <th id="cost_centre-header">Cost Centre</th>
+            <th id="reg_no-header">Registration Number</th>
+            <th id="category-header">Category</th>
+            <th id="group-header">Group</th>
+            <th id="body_type-header">Body Type</th>
+            <th id="status-header">Status</th>
+            <th id="area_available-header">Area Available</th>
+        </tr>
+        {% for vehicle in vehicles %}
+        <tr>
+            <td data-field="fleet_no">{{ vehicle.fleet_no }}</td>
+            <td data-field="cost_centre">{{ vehicle.cost_centre }}</td>
+            <td data-field="reg_no">{{ vehicle.reg_no }}</td>
+            <td data-field="category">{{ vehicle.category }}</td>
+            <td data-field="group">{{ vehicle.group }}</td>
+            <td data-field="body_type">{{ vehicle.body_type }}</td>
+            <td data-field="status">
+                <select class="status-dropdown" data-vehicle-id="{{ vehicle.reg_no }}">
+                    <option value="available" {% if vehicle.status == "available" %}selected{% endif %}>available</option>
+                    <option value="workshop" {% if vehicle.status == "workshop" %}selected{% endif %}>workshop</option>
+                    <option value="hired_out" {% if vehicle.status == "hired_out" %}selected{% endif %}>hired_out</option>
+                </select>
+            </td>
+            <td data-field="area_available">{{ vehicle.area_available }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <script>
+        // JavaScript for toggling column visibility
+        const toggleFields = (fieldName, isChecked) => {
+            const column = document.querySelectorAll(`[data-field="${fieldName}"]`);
+            const header = document.getElementById(`${fieldName}-header`);
+            column.forEach((element) => {
+                element.style.display = isChecked ? 'table-cell' : 'none';
+            });
+            header.style.display = isChecked ? 'table-cell' : 'none';
+        };
+
+        // Attach event listeners to the toggle checkboxes
+        const toggleCheckboxes = document.querySelectorAll("input[id^='toggle-']");
+        toggleCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', (event) => {
+                const fieldName = event.target.id.split('toggle-')[1];
+                const isChecked = event.target.checked;
+                toggleFields(fieldName, isChecked);
+            });
+        });
+
+        // JavaScript for updating the status
+        const statusDropdowns = document.querySelectorAll('.status-dropdown');
+        statusDropdowns.forEach((dropdown) => {
+            dropdown.addEventListener('change', (event) => {
+                const vehicleId = event.currentTarget.getAttribute('data-vehicle-id');
+                const newStatus = event.currentTarget.value;
+
+                fetch(`/vital_app/update_status/${vehicleId}/${newStatus}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(data.error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
